@@ -5,7 +5,7 @@ config(); // load environment variables from .env
 
 import { Command } from "commander";
 import pkg from "../package.json" with { type: "json" };
-import { startInteractiveChat } from "./interactive.js";
+import { startInteractiveChat, runPrompt } from "./interactive.js";
 
 const program = new Command();
 
@@ -56,8 +56,12 @@ async function main() {
       // Handle single prompt mode
       if (options.prompt) {
         console.log(`Running prompt: ${options.prompt}`);
-        // TODO: Implement prompt handling
-        process.exit(0);
+        await runPrompt({
+          servers: options.server,
+          configPath: options.config,
+          model: options.model,
+          prompt: options.prompt,
+        });
       }
 
       // Handle eval mode

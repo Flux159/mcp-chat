@@ -13,6 +13,8 @@ if (!ANTHROPIC_API_KEY) {
   throw new Error("ANTHROPIC_API_KEY is not set");
 }
 
+const MAX_TOKENS = 4096;
+
 class MCPClient {
   private mcp: Client;
   private anthropic: Anthropic;
@@ -130,7 +132,7 @@ class MCPClient {
     // Initial Claude API call
     const response = await this.anthropic.messages.create({
       model: this.model,
-      max_tokens: 1000,
+      max_tokens: MAX_TOKENS,
       messages,
       tools: this.tools,
     });
@@ -164,7 +166,7 @@ class MCPClient {
 
         // Get next response from Claude
         const response = await this.anthropic.messages.create({
-          model: "claude-3-5-sonnet-20241022",
+          model: this.model,
           max_tokens: 1000,
           messages,
         });
@@ -212,33 +214,47 @@ class MCPClient {
   }
 }
 
-type InteractiveChatOptions = {
+type ChatOptions = {
   servers?: string[];
   configPath?: string;
   model?: string;
 };
 
-export async function startInteractiveChat(options: InteractiveChatOptions) {
+async function setupChat(options: ChatOptions): Promise<MCPClient> {
   const mcpClient = new MCPClient(options.model);
-  try {
-    // await mcpClient.connectToServer("path/to/server/script");
-    if (options.servers) {
-      for (const server of options.servers) {
-        console.log(server);
-        try {
-          await mcpClient.connectToServer(server);
-        } catch (err) {
-          console.warn(`Failed to connect to server ${server}`);
-          console.warn(err);
-        }
-      }
-    } else {
-      console.warn(
-        "No mcp server specified. Starting chat loop without server."
-      );
-    }
 
+  if (options.servers) {
+    for (const server of options.servers) {
+      console.log(server);
+      try {
+        await mcpClient.connectToServer(server);
+      } catch (err) {
+        console.warn(`Failed to connect to server ${server}`);
+        console.warn(err);
+      }
+    }
+  } else {
+    console.warn("No mcp server specified. Starting chat loop without server.");
+  }
+
+  return mcpClient;
+}
+
+export async function startInteractiveChat(options: ChatOptions) {
+  const mcpClient = await setupChat(options);
+  try {
     await mcpClient.chatLoop();
+  } finally {
+    await mcpClient.cleanup();
+    process.exit(0);
+  }
+}
+
+export async function runPrompt(options: ChatOptions & { prompt: string }) {
+  const mcpClient = await setupChat(options);
+  try {
+    const response = await mcpClient.processQuery(options.prompt);
+    console.log(response);
   } finally {
     await mcpClient.cleanup();
     process.exit(0);
