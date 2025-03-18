@@ -1,0 +1,57 @@
+{
+  "name": "mcp-chat",
+  "version": "0.0.1",
+  "description": "Open Source Generic MCP Client for testing & evaluating mcp servers and agents",
+  "license": "MIT",
+  "type": "module",
+  "author": "Flux159",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Flux159/mcp-chat"
+  },
+  "bin": {
+    "mcp-chat": "dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc && shx chmod +x dist/*.js",
+    "dev": "tsc && bun run start",
+    "start": "node dist/index.js",
+    "test": "vitest run",
+    "prepublishOnly": "npm run build",
+    "dockerbuild": "docker buildx build -t flux159/mcp-chat --platform linux/amd64,linux/arm64 --push ."
+  },
+  "keywords": [
+    "mcp",
+    "chat",
+    "client",
+    "agent",
+    "server",
+    "claude",
+    "anthropic",
+    "openai",
+    "gemini"
+  ],
+  "engines": {
+    "node": ">-18"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "@modelcontextprotocol/sdk": "^1.7.0",
+    "commander": "^13.1.0",
+    "dotenv": "^16.4.7",
+    "js-yaml": "^4.1.0",
+    "yaml": "^2.7.0",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^22.9.3",
+    "shx": "^0.3.4",
+    "tsx": "4.19.3",
+    "typescript": "^5.6.2",
+    "vitest": "2.1.9"
+  }
+}
