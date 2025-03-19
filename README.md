@@ -104,10 +104,10 @@ bun install
 bun run dev
 ```
 
-To develop mcp-chat while connecting to an mcp-server, use "--" before the "--server" flag. Also note to escape the quotes because of the shell removing that otherwise (this isn't needed if you just build then run the dist/index.ts file, only if you run via `npm run dev` as an npm script):
+To develop mcp-chat while connecting to an mcp-server, make a build & run the CLI with the server flag:
 
 ```shell
-npm run dev -- --server \"npx mcp-server-kubernetes\"
+npm run build && node dist/index.js --server "npx mcp-server-kubernetes" -p "List the pods in the default namespace"
 ```
 
 Testing:
