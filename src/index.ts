@@ -7,7 +7,53 @@ import { Command } from "commander";
 import pkg from "../package.json" with { type: "json" }; // Note that for prettier you may need to remove this & use the line below because prettier can't parse the `with` keyword
 // const pkg = require("../package.json");
 import { startInteractiveChat, runPrompt } from "./interactive.js";
+import fs from "fs/promises";
+import path from "path";
+import os from "os";
 
+// Default config file paths for different OS
+const DEFAULT_CONFIG_PATHS = {
+  darwin: path.join(os.homedir(), "Library", "Application Support", "Claude", "claude_desktop_config.json"),
+  win32: path.join(process.env.APPDATA || "", "Claude", "claude_desktop_config.json"),
+};
+
+interface MCPServerConfig {
+  command: string;
+  args: string[];
+}
+
+interface ClaudeDesktopConfig {
+  mcpServers: {
+    [key: string]: MCPServerConfig;
+  };
+}
+
+function getDefaultConfigPath(): string {
+  const platform = process.platform;
+  const configPath = DEFAULT_CONFIG_PATHS[platform as keyof typeof DEFAULT_CONFIG_PATHS];
+  if (!configPath) {
+    throw new Error(`Unsupported platform: ${platform}`);
+  }
+  return configPath;
+}
+
+async function parseConfigFile(configPath: string): Promise<string[]> {
+  try {
+    const content = await fs.readFile(configPath, "utf-8");
+    const config = JSON.parse(content) as ClaudeDesktopConfig;
+
+    const servers: string[] = [];
+    for (const [name, serverConfig] of Object.entries(config.mcpServers)) {
+      // Convert the config to our server format
+      const serverString = [serverConfig.command, ...serverConfig.args].join(" ");
+      servers.push(serverString);
+    }
+    return servers;
+  } catch (error) {
+    console.error(`Failed to parse config file ${configPath}:`, error);
+    return [];
+  }
+}
 
 export function setupProgram(argv?: readonly string[]): ProgramOptions {
   const program = new Command();
@@ -59,13 +105,22 @@ const options = setupProgram(process.argv);
 
 async function main() {
   try {
-    // Default interactive mode if no specific mode is selected
-    // console.log(options);
+    let servers = options.server || [];
+    
+    // If configPath is "default" or a specific path is provided, parse it
+    if (options.config) {
+      const configPath = options.config === "default" 
+        ? getDefaultConfigPath() 
+        : options.config;
+      
+      const configServers = await parseConfigFile(configPath);
+      servers = [...servers, ...configServers];
+    }
 
+    // Default interactive mode if no specific mode is selected
     if (!options.prompt && !options.eval) {
       await startInteractiveChat({
-        servers: options.server,
-        configPath: options.config,
+        servers,
         model: options.model,
         chatFile: options.chat,
       });
@@ -74,10 +129,10 @@ async function main() {
       if (options.prompt) {
         console.log(`Running prompt: ${options.prompt}`);
         await runPrompt({
-          servers: options.server,
-          configPath: options.config,
+          servers,
           model: options.model,
           prompt: options.prompt,
+          chatFile: options.chat,
         });
       }
 

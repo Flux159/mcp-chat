@@ -33,7 +33,6 @@ const CHATS_DIR = path.join(MCPCHAT_DIR, "chats");
 
 interface ChatOptions {
   servers?: string[];
-  configPath?: string;
   model?: string;
   chatFile?: string;
 }
