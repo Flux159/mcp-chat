@@ -10,7 +10,7 @@ You can get an API key by signing up at the [Anthropic Console keys page](https:
 Simple use case that spawns a chat prompt with two MCP servers from CLI:
 
 ```shell
-npx mcp-chat --server "npx mcp-server-kubernetes" --server "npx -y @modelcontextprotocol/server-filesystem /Users/username/Desktop"
+npx mcp-chat --server "npx -y @modelcontextprotocol/server-filesystem /Users/username/Desktop"
 ```
 
 This will open up a chat prompt that you can use to interact with the servers and chat with an LLM.

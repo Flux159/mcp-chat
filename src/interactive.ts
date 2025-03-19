@@ -7,7 +7,6 @@ import {
   MessageStreamEvent,
   ContentBlockDeltaEvent,
   ContentBlockStartEvent,
-  ContentBlockStopEvent,
 } from "@anthropic-ai/sdk/resources/messages/messages.mjs";
 
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
@@ -408,12 +407,14 @@ export class MCPClient {
           arguments: toolArgs,
         });
 
+        // Pretty print the result
+        const formattedResult = JSON.stringify(result, null, 2);
         finalText.push(
           `${GREEN}[Tool Call] ${toolName}${RESET}\n${GREEN}Arguments: ${JSON.stringify(
             toolArgs,
             null,
             2
-          )}${RESET}\n${BLUE}Result: ${this.formatToolResult(result)}${RESET}`
+          )}${RESET}\n${BLUE}Result: ${formattedResult}${RESET}`
         );
 
         this.messageHistory.push({
@@ -432,7 +433,6 @@ export class MCPClient {
         });
 
         // Recursively handle any additional tool calls
-        // const additionalResponse = await this.handleToolCallResponseNonStream();
         const additionalResponse = await this.createRequest(false);
         const additionalText = await this.handleNonStreamResponse(
           additionalResponse
@@ -499,8 +499,13 @@ export class MCPClient {
         }
       } else if (event.type === "content_block_stop" && currentToolUse) {
         try {
-          const input = JSON.parse(currentToolInput);
-          currentToolUse.input = input;
+          let input = undefined;
+          try {
+            input = JSON.parse(currentToolInput);
+            currentToolUse.input = input;
+          } catch (err) {
+            // No input to tool call
+          }
 
           const result = await this.mcp.callTool({
             name: currentToolUse.name,
@@ -522,9 +527,9 @@ export class MCPClient {
             content: [toolResult],
           });
 
-          onToken(
-            `\n${BLUE}Result: ${this.formatToolResult(result)}${RESET}\n`
-          );
+          // Pretty print the result
+          const formattedResult = JSON.stringify(result, null, 2);
+          onToken(`\n${BLUE}Result: ${formattedResult}${RESET}\n`);
 
           // Handle any additional tool calls by creating a new message and streaming it
           await this.createAndRunRequest(onToken);
@@ -720,8 +725,13 @@ export async function runPrompt(options: ChatOptions & { prompt: string }) {
       await mcpClient.loadChatFile(options.chatFile, false);
     }
 
-    const response = await mcpClient.processQuery(options.prompt);
-    console.log(response);
+    // const response = await mcpClient.processQuery(options.prompt);
+    // const response = await mcpClient.processQueryStream()
+    await mcpClient.processQueryStream(options.prompt, (token) => {
+      process.stdout.write(token);
+    });
+    console.log("\n"); // Add a newline after the response
+    // console.log(response);
 
     // Save the chat file if we loaded one or created a new one
     await mcpClient.saveChatFile();
