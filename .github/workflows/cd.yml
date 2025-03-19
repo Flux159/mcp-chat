@@ -23,6 +23,8 @@ jobs:
 
       - name: Run Tests
         run: bun run test
+        env:
+          ANTHROPIC_API_KEY: "test"
 
       - name: Update version number
         uses: reecetech/version-increment@2024.10.1
