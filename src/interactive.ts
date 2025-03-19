@@ -47,6 +47,18 @@ interface ChatOptions {
   systemPrompt?: string;
 }
 
+interface ChatSettings {
+  model: string;
+  systemPrompt?: string;
+  servers?: string[];
+}
+
+interface ChatFileFormat {
+  title: string;
+  settings: ChatSettings;
+  messages: MessageParam[];
+}
+
 export class MCPClient {
   private mcp: Client;
   private anthropic: Anthropic;
@@ -56,6 +68,7 @@ export class MCPClient {
   private rl: readline.Interface | null = null;
   private commandHistory: string[] = [];
   private currentChatFile: string | null = null;
+  private currentChatTitle: string | null = null;
   public model: string;
   public systemPrompt: string | undefined;
 
@@ -111,14 +124,49 @@ export class MCPClient {
   ): Promise<void> {
     try {
       const content = await fs.readFile(chatFile, "utf-8");
-      const messages = JSON.parse(content) as MessageParam[];
-      this.messageHistory = messages;
+      const chatData = JSON.parse(content) as ChatFileFormat;
+      this.messageHistory = chatData.messages;
       this.currentChatFile = chatFile;
+      this.currentChatTitle = chatData.title;
+
+      // Load settings if they exist
+      if (chatData.settings) {
+        // Only override settings if they weren't explicitly provided in options
+        if (!this.options.model) {
+          this.model = chatData.settings.model;
+        }
+        if (!this.options.systemPrompt) {
+          this.systemPrompt = chatData.settings.systemPrompt;
+        }
+        if (!this.options.servers && chatData.settings.servers) {
+          // Reconnect to servers from the chat file
+          for (const server of chatData.settings.servers) {
+            try {
+              await this.connectToServer(server);
+            } catch (err) {
+              console.warn(
+                `Failed to reconnect to server ${server} from chat file`
+              );
+              console.warn(err);
+            }
+          }
+        }
+      }
 
       if (printHistory) {
         // Print previous messages
+        console.log(`\nLoading chat: ${chatData.title}`);
+        if (chatData.settings) {
+          console.log(`Model: ${chatData.settings.model}`);
+          if (chatData.settings.systemPrompt) {
+            console.log(`System Prompt: ${chatData.settings.systemPrompt}`);
+          }
+          if (chatData.settings.servers?.length) {
+            console.log(`Servers: ${chatData.settings.servers.join(", ")}`);
+          }
+        }
         console.log("\nPrevious messages:");
-        for (const msg of messages) {
+        for (const msg of chatData.messages) {
           if (msg.role === "user") {
             console.log("\n> " + msg.content);
           } else if (msg.role === "assistant") {
@@ -162,13 +210,28 @@ export class MCPClient {
         getChatsDir(),
         `chat-${index}-${timestamp}.json`
       );
+      // Set a default title if none exists
+      if (!this.currentChatTitle) {
+        this.currentChatTitle = `Chat ${index} - ${new Date(
+          timestamp
+        ).toLocaleString()}`;
+      }
     }
 
     try {
       await this.ensureDirectories();
+      const chatData: ChatFileFormat = {
+        title: this.currentChatTitle || "Untitled Chat",
+        settings: {
+          model: this.model,
+          systemPrompt: this.systemPrompt,
+          servers: this.options.servers,
+        },
+        messages: this.messageHistory,
+      };
       await fs.writeFile(
         this.currentChatFile,
-        JSON.stringify(this.messageHistory, null, 2)
+        JSON.stringify(chatData, null, 2)
       );
     } catch (error) {
       console.error("Failed to save chat file:", error);
