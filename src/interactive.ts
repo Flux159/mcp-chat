@@ -16,6 +16,7 @@ import readline from "readline/promises";
 import fs from "fs/promises";
 import path from "path";
 import os from "os";
+import { Stream } from "@anthropic-ai/sdk/streaming.mjs";
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 if (!ANTHROPIC_API_KEY) {
@@ -289,42 +290,36 @@ export class MCPClient {
     }
   }
 
-  async processQuery(query: string) {
-    /**
-     * Process a query using Claude and available tools
-     *
-     * @param query - The user's input query
-     * @returns Processed response as a string
-     */
-    // Add user query to message history
-    this.messageHistory.push({
-      role: "user",
-      content: query,
-    });
-
-    // Initial Claude API call with full message history
-    const response = await this.anthropic.messages.create({
+  private async createRequest(
+    stream: true
+  ): Promise<Stream<Anthropic.Messages.RawMessageStreamEvent>>;
+  private async createRequest(
+    stream: false
+  ): Promise<Anthropic.Messages.Message>;
+  private async createRequest(stream: boolean = false) {
+    return this.anthropic.messages.create({
       model: this.model,
       max_tokens: MAX_TOKENS,
       messages: this.messageHistory,
       tools: this.tools,
+      stream,
       system: this.systemPrompt,
     });
+  }
 
-    // Process response and handle tool calls
+  private async handleNonStreamResponse(
+    response: Anthropic.Messages.Message
+  ): Promise<string> {
     const finalText = [];
-    const toolResults = [];
 
     for (const content of response.content) {
       if (content.type === "text") {
         finalText.push(content.text);
-        // Add assistant's text response to message history
         this.messageHistory.push({
           role: "assistant",
           content: content.text,
         });
       } else if (content.type === "tool_use") {
-        // Execute tool call
         const toolName = content.name;
         const toolArgs = content.input as { [x: string]: unknown } | undefined;
 
@@ -332,7 +327,7 @@ export class MCPClient {
           name: toolName,
           arguments: toolArgs,
         });
-        toolResults.push(result);
+
         finalText.push(
           `${GREEN}[Tool Call] ${toolName}${RESET}\n${GREEN}Arguments: ${JSON.stringify(
             toolArgs,
@@ -341,13 +336,11 @@ export class MCPClient {
           )}${RESET}\n${BLUE}Result: ${this.formatToolResult(result)}${RESET}`
         );
 
-        // Add tool use to message history
         this.messageHistory.push({
           role: "assistant",
           content: [content as ToolUseBlockParam],
         });
 
-        // Add tool result to message history
         const toolResult: ToolResultBlockParam = {
           tool_use_id: content.id,
           type: "tool_result",
@@ -359,141 +352,33 @@ export class MCPClient {
         });
 
         // Recursively handle any additional tool calls
-        const additionalResponse = await this.handleToolCallResponseNonStream();
-        finalText.push(additionalResponse);
+        // const additionalResponse = await this.handleToolCallResponseNonStream();
+        const additionalResponse = await this.createRequest(false);
+        const additionalText = await this.handleNonStreamResponse(
+          additionalResponse
+        );
+        finalText.push(additionalText);
       }
     }
 
     return finalText.join("\n");
   }
 
-  async processQueryStream(query: string, onToken: (token: string) => void) {
-    /**
-     * Process a query using Claude and available tools with streaming response
-     *
-     * @param query - The user's input query
-     * @param onToken - Callback function to handle each token of the response
-     */
+  async processQuery(query: string) {
     // Add user query to message history
     this.messageHistory.push({
       role: "user",
       content: query,
     });
 
-    let currentText = "";
-    let currentToolUse: ToolUseBlockParam | null = null;
-    let currentToolInput = "";
-
-    // Stream the response
-    const stream = await this.anthropic.messages.create({
-      model: this.model,
-      max_tokens: MAX_TOKENS,
-      messages: this.messageHistory,
-      tools: this.tools,
-      stream: true,
-      system: this.systemPrompt,
-    });
-
-    for await (const chunk of stream) {
-      const event = chunk as MessageStreamEvent;
-
-      if (event.type === "content_block_start") {
-        const start = event as ContentBlockStartEvent;
-        // If we have accumulated text, add it to message history before starting new block
-        if (currentText) {
-          this.messageHistory.push({
-            role: "assistant",
-            content: currentText,
-          });
-          currentText = "";
-        }
-
-        if (start.content_block.type === "tool_use") {
-          currentToolUse = {
-            id: start.content_block.id,
-            type: "tool_use",
-            name: start.content_block.name,
-            input: {},
-          };
-          onToken(
-            `\n${GREEN}[Tool Call] ${start.content_block.name}${RESET}\n`
-          );
-        }
-      } else if (event.type === "content_block_delta") {
-        const delta = event as ContentBlockDeltaEvent;
-        if (delta.delta.type === "text_delta") {
-          currentText += delta.delta.text;
-          onToken(delta.delta.text);
-        } else if (delta.delta.type === "input_json_delta" && currentToolUse) {
-          currentToolInput += delta.delta.partial_json;
-          onToken(`${GREEN}${delta.delta.partial_json}${RESET}`);
-        }
-      } else if (event.type === "content_block_stop" && currentToolUse) {
-        // Parse the complete JSON input
-        try {
-          const input = JSON.parse(currentToolInput);
-          currentToolUse.input = input;
-
-          // Execute tool call
-          const result = await this.mcp.callTool({
-            name: currentToolUse.name,
-            arguments: input,
-          });
-
-          // Add tool use and result to message history
-          this.messageHistory.push({
-            role: "assistant",
-            content: [currentToolUse],
-          });
-
-          const toolResult: ToolResultBlockParam = {
-            tool_use_id: currentToolUse.id,
-            type: "tool_result",
-            content: result.content as string,
-          };
-          this.messageHistory.push({
-            role: "user",
-            content: [toolResult],
-          });
-
-          onToken(
-            `\n${BLUE}Result: ${this.formatToolResult(result)}${RESET}\n`
-          );
-
-          // Recursively handle any additional tool calls
-          await this.handleToolCallResponse(onToken);
-        } catch (error) {
-          console.error("Error parsing tool input JSON:", error);
-        }
-
-        currentToolUse = null;
-        currentToolInput = "";
-      }
-    }
-
-    // Add any remaining text to message history
-    if (currentText) {
-      this.messageHistory.push({
-        role: "assistant",
-        content: currentText,
-      });
-    }
+    const response = await this.createRequest(false);
+    return this.handleNonStreamResponse(response);
   }
 
-  private async handleToolCallResponse(onToken: (token: string) => void) {
-    /**
-     * Handle the response after a tool call, recursively processing any additional tool calls
-     * @param onToken - Callback function to handle each token of the response
-     */
-    const response = await this.anthropic.messages.create({
-      model: this.model,
-      max_tokens: 1000,
-      messages: this.messageHistory,
-      tools: this.tools,
-      stream: true,
-      system: this.systemPrompt,
-    });
-
+  private async handleStreamResponse(
+    response: AsyncIterable<MessageStreamEvent>,
+    onToken: (token: string) => void
+  ): Promise<void> {
     let currentText = "";
     let currentToolUse: ToolUseBlockParam | null = null;
     let currentToolInput = "";
@@ -561,8 +446,8 @@ export class MCPClient {
             `\n${BLUE}Result: ${this.formatToolResult(result)}${RESET}\n`
           );
 
-          // Recursively handle any additional tool calls
-          await this.handleToolCallResponse(onToken);
+          // Handle any additional tool calls by creating a new message and streaming it
+          await this.createAndRunRequest(onToken);
         } catch (error) {
           console.error("Error handling tool call response:", error);
         }
@@ -581,67 +466,25 @@ export class MCPClient {
     }
   }
 
-  private async handleToolCallResponseNonStream(): Promise<string> {
+  async processQueryStream(query: string, onToken: (token: string) => void) {
     /**
-     * Handle the response after a tool call, recursively processing any additional tool calls
-     * @returns The final response text
+     * Process a query using Claude and available tools with streaming response
+     *
+     * @param query - The user's input query
+     * @param onToken - Callback function to handle each token of the response
      */
-    const response = await this.anthropic.messages.create({
-      model: this.model,
-      max_tokens: 1000,
-      messages: this.messageHistory,
-      tools: this.tools,
-      system: this.systemPrompt,
+    // Add user query to message history
+    this.messageHistory.push({
+      role: "user",
+      content: query,
     });
 
-    const finalText = [];
+    await this.createAndRunRequest(onToken);
+  }
 
-    for (const content of response.content) {
-      if (content.type === "text") {
-        finalText.push(content.text);
-        this.messageHistory.push({
-          role: "assistant",
-          content: content.text,
-        });
-      } else if (content.type === "tool_use") {
-        const toolName = content.name;
-        const toolArgs = content.input as { [x: string]: unknown } | undefined;
-
-        const result = await this.mcp.callTool({
-          name: toolName,
-          arguments: toolArgs,
-        });
-
-        finalText.push(
-          `${GREEN}[Tool Call] ${toolName}${RESET}\n${GREEN}Arguments: ${JSON.stringify(
-            toolArgs,
-            null,
-            2
-          )}${RESET}\n${BLUE}Result: ${this.formatToolResult(result)}${RESET}`
-        );
-
-        this.messageHistory.push({
-          role: "assistant",
-          content: [content as ToolUseBlockParam],
-        });
-
-        const toolResult: ToolResultBlockParam = {
-          tool_use_id: content.id,
-          type: "tool_result",
-          content: result.content as string,
-        };
-        this.messageHistory.push({
-          role: "user",
-          content: [toolResult],
-        });
-
-        // Recursively handle any additional tool calls
-        const additionalResponse = await this.handleToolCallResponseNonStream();
-        finalText.push(additionalResponse);
-      }
-    }
-
-    return finalText.join("\n");
+  private async createAndRunRequest(onToken: (token: string) => void) {
+    const stream = await this.createRequest(true);
+    await this.handleStreamResponse(stream, onToken);
   }
 
   private async handleSpecialCommand(message: string): Promise<boolean> {
