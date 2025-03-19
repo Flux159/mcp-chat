@@ -86,7 +86,7 @@ Agent mode with single prompt from command line:
 npx mcp-chat --agent --server "npx mcp-server-kubernetes" -p "List the pods in the default namespace then create a new nginx pod."
 ```
 
-Agent mode supports a yaml config file for more complex agent behavior. Similar to claude_deskto_config.json, you can specify MCP servers in the agent config but also other options like model, system prompt, and custom settings:
+Agent mode supports a yaml config file for more complex agent behavior. Similar to claude_desktop_config.json, you can specify MCP servers in the agent config but also other options like model, system prompt, and custom settings:
 
 ```
 npx mcp-chat --agent-config "agentconfig.yaml"

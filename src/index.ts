@@ -10,6 +10,7 @@ import { startInteractiveChat, runPrompt } from "./interactive.js";
 import fs from "fs/promises";
 import path from "path";
 import os from "os";
+import { DEFAULT_SYSTEM_PROMPT } from "./constants.js";
 
 function getDefaultConfigPaths() {
   return {
@@ -80,6 +81,7 @@ export function setupProgram(argv?: readonly string[]): ProgramOptions {
         return servers;
       }
     )
+    .option("--system <system_prompt>", "Specify a custom system prompt to run.")
     .option(
       "--chat <file>",
       "Load and continue a previous chat session from a JSON file"
@@ -101,6 +103,7 @@ interface ProgramOptions {
   agent?: boolean;
   eval?: string;
   chat?: string;
+  system?: string;
 }
 
 const options = setupProgram(process.argv);
@@ -125,6 +128,7 @@ async function main() {
         servers,
         model: options.model,
         chatFile: options.chat,
+        systemPrompt: options.system || DEFAULT_SYSTEM_PROMPT,
       });
     } else {
       // Handle single prompt mode
@@ -135,6 +139,7 @@ async function main() {
           model: options.model,
           prompt: options.prompt,
           chatFile: options.chat,
+          systemPrompt: options.system || DEFAULT_SYSTEM_PROMPT,
         });
       }
 
