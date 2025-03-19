@@ -31,6 +31,10 @@ export function setupProgram(argv?: readonly string[]): ProgramOptions {
         servers.push(val);
         return servers;
       }
+    )
+    .option(
+      "--chat <file>",
+      "Load and continue a previous chat session from a JSON file"
     );
 
   program.parse(argv);
@@ -48,6 +52,7 @@ interface ProgramOptions {
   model?: string;
   agent?: boolean;
   eval?: string;
+  chat?: string;
 }
 
 const options = setupProgram(process.argv);
@@ -62,6 +67,7 @@ async function main() {
         servers: options.server,
         configPath: options.config,
         model: options.model,
+        chatFile: options.chat,
       });
     } else {
       // Handle single prompt mode

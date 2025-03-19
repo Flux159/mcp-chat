@@ -27,7 +27,16 @@ const GREEN = "\x1b[32m";
 const BLUE = "\x1b[34m";
 const RESET = "\x1b[0m";
 
-const HISTORY_FILE = path.join(os.homedir(), ".mcpchathistory");
+const MCPCHAT_DIR = path.join(os.homedir(), ".mcpchat");
+const HISTORY_FILE = path.join(MCPCHAT_DIR, "history");
+const CHATS_DIR = path.join(MCPCHAT_DIR, "chats");
+
+interface ChatOptions {
+  servers?: string[];
+  configPath?: string;
+  model?: string;
+  chatFile?: string;
+}
 
 class MCPClient {
   private mcp: Client;
@@ -37,8 +46,12 @@ class MCPClient {
   private messageHistory: MessageParam[] = [];
   private rl: readline.Interface | null = null;
   private commandHistory: string[] = [];
+  private currentChatFile: string | null = null;
+  public model: string;
 
-  constructor(public model: string = "claude-3-5-sonnet-20241022") {
+  constructor(private options: ChatOptions = {}) {
+    this.model = options.model || "claude-3-5-sonnet-20241022";
+
     // Initialize Anthropic client and MCP client
     this.anthropic = new Anthropic({
       apiKey: ANTHROPIC_API_KEY,
@@ -46,8 +59,21 @@ class MCPClient {
     this.mcp = new Client({ name: "mcp-client-cli", version: "1.0.0" });
   }
 
+  private async ensureDirectories(): Promise<void> {
+    try {
+      // Create .mcpchat directory if it doesn't exist
+      await fs.mkdir(MCPCHAT_DIR, { recursive: true });
+      // Create chats subdirectory if it doesn't exist
+      await fs.mkdir(CHATS_DIR, { recursive: true });
+    } catch (error) {
+      console.error("Failed to create directories:", error);
+      throw error;
+    }
+  }
+
   private async loadHistory(): Promise<void> {
     try {
+      await this.ensureDirectories();
       const historyContent = await fs.readFile(HISTORY_FILE, "utf-8");
       this.commandHistory = historyContent.split("\n").filter(Boolean);
     } catch (error) {
@@ -58,9 +84,67 @@ class MCPClient {
 
   private async saveHistory(): Promise<void> {
     try {
+      await this.ensureDirectories();
       await fs.writeFile(HISTORY_FILE, this.commandHistory.join("\n") + "\n");
     } catch (error) {
       console.error("Failed to save history:", error);
+    }
+  }
+
+  private async loadChatFile(chatFile: string): Promise<void> {
+    try {
+      const content = await fs.readFile(chatFile, "utf-8");
+      const messages = JSON.parse(content) as MessageParam[];
+      this.messageHistory = messages;
+      this.currentChatFile = chatFile;
+
+      // Print previous messages
+      console.log("\nPrevious messages:");
+      for (const msg of messages) {
+        if (msg.role === "user") {
+          console.log("\n> " + msg.content);
+        } else if (msg.role === "assistant") {
+          if (Array.isArray(msg.content)) {
+            // Handle tool calls
+            for (const content of msg.content) {
+              if (content.type === "tool_use") {
+                console.log(`\n${GREEN}[Tool Call] ${content.name}${RESET}`);
+                console.log(
+                  `${GREEN}Arguments: ${JSON.stringify(
+                    content.input,
+                    null,
+                    2
+                  )}${RESET}`
+                );
+              }
+            }
+          } else {
+            console.log("\n" + msg.content);
+          }
+        }
+      }
+      console.log("\n--- Continuing chat ---\n");
+    } catch (error) {
+      console.error("Failed to load chat file:", error);
+      throw error;
+    }
+  }
+
+  private async saveChatFile(): Promise<void> {
+    if (!this.currentChatFile) {
+      // Create new chat file
+      const timestamp = Date.now();
+      this.currentChatFile = path.join(CHATS_DIR, `chat-${timestamp}.json`);
+    }
+
+    try {
+      await this.ensureDirectories();
+      await fs.writeFile(
+        this.currentChatFile,
+        JSON.stringify(this.messageHistory, null, 2)
+      );
+    } catch (error) {
+      console.error("Failed to save chat file:", error);
     }
   }
 
@@ -411,6 +495,11 @@ class MCPClient {
     // Load command history
     await this.loadHistory();
 
+    // Load chat file if specified
+    if (this.options.chatFile) {
+      await this.loadChatFile(this.options.chatFile);
+    }
+
     // Create readline interface
     this.rl = readline.createInterface({
       input: process.stdin,
@@ -451,6 +540,9 @@ class MCPClient {
           process.stdout.write(token);
         });
         console.log("\n"); // Add a newline after the response
+
+        // Save chat after each response
+        await this.saveChatFile();
       }
     } finally {
       this.rl.close();
@@ -466,14 +558,8 @@ class MCPClient {
   }
 }
 
-type ChatOptions = {
-  servers?: string[];
-  configPath?: string;
-  model?: string;
-};
-
 async function setupChat(options: ChatOptions): Promise<MCPClient> {
-  const mcpClient = new MCPClient(options.model);
+  const mcpClient = new MCPClient(options);
 
   if (options.servers) {
     for (const server of options.servers) {
