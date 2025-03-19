@@ -4,31 +4,49 @@ Open Source Generic MCP Client for testing & evaluating mcp servers and agents
 
 ## Quickstart
 
+Make sure that you have `ANTHROPIC_API_KEY` exported in your environment or in a .env file in the root of the project.
+You can get an API key by signing up at the [Anthropic Console keys page](https://console.anthropic.com/settings/keys).
+
 Simple use case that spawns a chat prompt with two MCP servers from CLI:
 
-```
+```shell
 npx mcp-chat --server "npx mcp-server-kubernetes" --server "npx -y @modelcontextprotocol/server-filesystem /Users/username/Desktop"
 ```
 
 This will open up a chat prompt that you can use to interact with the servers and chat with an LLM.
 
+## For developers of mcp-servers
+
+You can pass in a local build of a python or node mcp-server to test it out with mcp-chat:
+
+```shell
+# Directly executing built script
+npx mcp-chat --server "/path/to/mcp-server-kubernetes/dist/index.js"
+# Using node / bun
+npx mcp-chat --server "node /path/to/mcp-server-kubernetes/dist/index.js"
+# Python: Using uv
+npx mcp-chat --server "uv --directory /path/to/mcp-server-weather/ run weather.py"
+# Using python / python3 - make sure to run in venv or install deps globally
+npx mcp-chat --server "/path/to/mcp-server-weather/weather.py"
+```
+
 ## Config
 
 You can also just specify your claude_desktop_config.json (Mac):
 
-```
+```shell
 npx mcp-chat --config "~/Library/Application Support/Claude/claude_desktop_config.json"
 ```
 
 Or (Windows):
 
-```
+```shell
 npx mcp-chat --config "%APPDATA%\Claude\claude_desktop_config.json"
 ```
 
 On linux, you can just make a claude_desktop_config.json anywhere and specify the path to it. Example json below:
 
-```
+```json
 {
   "mcpServers": {
     "filesystem": {
@@ -48,7 +66,7 @@ On linux, you can just make a claude_desktop_config.json anywhere and specify th
 
 Run prompts via CLI with the `-p` flag:
 
-```
+```shell
 npx mcp-chat --server "npx mcp-server-kubernetes" -p "List the pods in the default namespace"
 ```
 
@@ -56,7 +74,7 @@ This runs the prompt with the kubenertes mcp-server & exits after the response i
 
 Choose a model to chat with via CLI with the `-m` flag:
 
-```
+```shell
 npx mcp-chat --server "npx mcp-server-kubernetes" -m "claude-3.5"
 ```
 
@@ -66,7 +84,7 @@ Custom system prompt:
 
 `--system` flag can be used to specify a system prompt:
 
-```
+```shell
 npx mcp-chat --system "Explain the output to the user in pirate speak." --server "npx mcp-server-kubernetes" -p "List the pods in the default namespace"
 ```
 
@@ -74,7 +92,7 @@ npx mcp-chat --system "Explain the output to the user in pirate speak." --server
 
 You can also run mcp-chat in agent mode to chat with an LLM agent:
 
-```
+```shell
 npx mcp-chat --agent --server "npx mcp-server-kubernetes"
 ```
 
@@ -82,13 +100,13 @@ Agent mode starts a prompt, but then will run in an agentic observe-reason-act l
 
 Agent mode with single prompt from command line:
 
-```
+```shell
 npx mcp-chat --agent --server "npx mcp-server-kubernetes" -p "List the pods in the default namespace then create a new nginx pod."
 ```
 
 Agent mode supports a yaml config file for more complex agent behavior. Similar to claude_desktop_config.json, you can specify MCP servers in the agent config but also other options like model, system prompt, and custom settings:
 
-```
+```shell
 npx mcp-chat --agent-config "agentconfig.yaml"
 ```
 
@@ -98,7 +116,7 @@ Why Yaml and not JSON or [JSONC](https://code.visualstudio.com/docs/languages/js
 
 mcp-chat is a great way to setup evals (/"integration tests") for MCP servers. You can use the `--eval` flag to run a series of prompts and evaluate the responses.
 
-```
+```shell
 npx mcp-chat --server "npx mcp-server-kubernetes" --eval "evals/kubernetes.yaml"
 ```
 
@@ -110,7 +128,7 @@ Set it up to run in a CI/CD pipeline to evaluate your mcp servers against known 
 
 Install dependencies & run the CLI:
 
-```
+```shell
 git clone https://github.com/Flux159/mcp-chat
 bun install
 bun run dev
@@ -118,31 +136,31 @@ bun run dev
 
 To develop mcp-chat while connecting to an mcp-server, use "--" before the "--server" flag. Also note to escape the quotes because of the shell removing that otherwise (this isn't needed if you just build then run the dist/index.ts file, only if you run via `npm run dev` as an npm script):
 
-```
+```shell
 npm run dev -- --server \"npx mcp-server-kubernetes\"
 ```
 
 Testing:
 
-```
+```shell
 bun run test
 ```
 
 Building:
 
-```
+```shell
 bun run build
 ```
 
 Publishing:
 
-```
+```shell
 bun run publish
 ```
 
 Publishing Docker:
 
-```
+```shell
 bun run dockerbuild
 ```
 

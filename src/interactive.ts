@@ -232,16 +232,33 @@ export class MCPClient {
         if (!isJs && !isPy) {
           throw new Error("Server script must be a .js or .py file");
         }
-        const command = isPy
-          ? process.platform === "win32"
-            ? "python"
-            : "python3"
-          : process.execPath;
+
+        let command = process.execPath;
+        let args = [serverScriptPath];
+        if (isPy) {
+          const allArgs = serverScriptPath.split(" ");
+          const pyCommand = allArgs[0];
+          if (pyCommand === "uv") {
+            // Use 'uv' command for Python scripts
+            command = pyCommand;
+          } else {
+            // They will need to be in venv
+            command = process.platform === "win32" ? "python" : "python3";
+          }
+          args = allArgs.slice(1);
+        } else if (isJs) {
+          const allArgs = serverScriptPath.split(" ");
+          const jsCommand = allArgs[0];
+          if (jsCommand === "node" || jsCommand === "bun") {
+            command = jsCommand;
+            args = allArgs.slice(1);
+          }
+        }
 
         // Initialize transport and connect to server
         this.transport = new StdioClientTransport({
           command,
-          args: [serverScriptPath],
+          args,
         });
         this.mcp.connect(this.transport);
       }
