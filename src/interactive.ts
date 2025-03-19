@@ -13,6 +13,9 @@ import {
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import readline from "readline/promises";
+import fs from "fs/promises";
+import path from "path";
+import os from "os";
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 if (!ANTHROPIC_API_KEY) {
@@ -24,12 +27,16 @@ const GREEN = "\x1b[32m";
 const BLUE = "\x1b[34m";
 const RESET = "\x1b[0m";
 
+const HISTORY_FILE = path.join(os.homedir(), ".mcpchathistory");
+
 class MCPClient {
   private mcp: Client;
   private anthropic: Anthropic;
   private transport: StdioClientTransport | null = null;
   private tools: Tool[] = [];
   private messageHistory: MessageParam[] = [];
+  private rl: readline.Interface | null = null;
+  private commandHistory: string[] = [];
 
   constructor(public model: string = "claude-3-5-sonnet-20241022") {
     // Initialize Anthropic client and MCP client
@@ -37,6 +44,24 @@ class MCPClient {
       apiKey: ANTHROPIC_API_KEY,
     });
     this.mcp = new Client({ name: "mcp-client-cli", version: "1.0.0" });
+  }
+
+  private async loadHistory(): Promise<void> {
+    try {
+      const historyContent = await fs.readFile(HISTORY_FILE, "utf-8");
+      this.commandHistory = historyContent.split("\n").filter(Boolean);
+    } catch (error) {
+      // File doesn't exist or is empty, that's fine
+      this.commandHistory = [];
+    }
+  }
+
+  private async saveHistory(): Promise<void> {
+    try {
+      await fs.writeFile(HISTORY_FILE, this.commandHistory.join("\n") + "\n");
+    } catch (error) {
+      console.error("Failed to save history:", error);
+    }
   }
 
   async connectToServer(serverScriptPath: string) {
@@ -336,26 +361,89 @@ class MCPClient {
     }
   }
 
+  private async handleSpecialCommand(message: string): Promise<boolean> {
+    /**
+     * Handle special commands like quit, exit, history
+     * @param message - The user's input message
+     * @returns true if the message was handled as a special command
+     */
+    const trimmed = message.trim().toLowerCase();
+
+    switch (trimmed) {
+      case "quit":
+      case "exit":
+        return true;
+
+      default:
+        if (trimmed.startsWith("history")) {
+          const args = trimmed.slice("history".length).trim();
+          let count = 20; // Default to last 20 commands
+
+          if (args) {
+            // Handle both "history N" and "history -n N" formats
+            const match = args.match(/^(-n\s+)?(\d+)$/);
+            if (match) {
+              count = parseInt(match[2], 10);
+            } else {
+              console.log("Usage: history [N] or history -n N");
+              return true;
+            }
+          }
+
+          // Get the last N commands
+          const start = Math.max(0, this.commandHistory.length - count);
+          const history = this.commandHistory.slice(start);
+
+          // Print with line numbers
+          history.forEach((cmd: string, index: number) => {
+            console.log(`${start + index + 1}  ${cmd}`);
+          });
+          return true;
+        }
+        return false;
+    }
+  }
+
   async chatLoop() {
     /**
      * Run an interactive chat loop with streaming responses
      */
-    const rl = readline.createInterface({
+    // Load command history
+    await this.loadHistory();
+
+    // Create readline interface
+    this.rl = readline.createInterface({
       input: process.stdin,
       output: process.stdout,
+      history: this.commandHistory,
+      historySize: 1000, // Keep last 1000 commands
     });
 
     try {
-      console.log("\nMCP Client Started!");
-      console.log("Type your queries or 'exit' or 'quit' to close.");
+      console.log("\nWelcome to MCP Chat Interactive!");
+      console.log("See connected server(s) with tools above.");
+      console.log("Commands:");
+      console.log("  exit, quit - Close the chat");
+      console.log("  history [N] - View last N commands (default 20)");
+      console.log("\nPress up/down arrow keys to navigate command history.");
+      console.log("Use 'Ctrl+C' to exit at any time.");
 
       while (true) {
-        const message = await rl.question("\nQuery: ");
-        if (
-          message.toLowerCase() === "quit" ||
-          message.toLowerCase() === "exit"
-        ) {
-          break;
+        const message = await this.rl.question("\n> ");
+
+        // Handle special commands first
+        if (await this.handleSpecialCommand(message)) {
+          const trimmed = message.trim().toLowerCase();
+          if (trimmed === "quit" || trimmed === "exit") {
+            break;
+          }
+          continue;
+        }
+
+        // Add message to history
+        if (message.trim()) {
+          // Save history before running each command
+          await this.saveHistory();
         }
 
         // Process the query with streaming response
@@ -365,7 +453,8 @@ class MCPClient {
         console.log("\n"); // Add a newline after the response
       }
     } finally {
-      rl.close();
+      this.rl.close();
+      this.rl = null;
     }
   }
 
