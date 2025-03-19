@@ -2,6 +2,10 @@
 
 Open Source Generic MCP Client for testing & evaluating mcp servers and agents
 
+<p align="center">
+  <img width="600" src="https://raw.githubusercontent.com/Flux159/mcp-chat/refs/heads/main/mcpchat.svg">
+</p>
+
 ## Quickstart
 
 Make sure that you have `ANTHROPIC_API_KEY` exported in your environment or in a .env file in the root of the project. You can get an API key by signing up at the [Anthropic Console keys page](https://console.anthropic.com/settings/keys).
