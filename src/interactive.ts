@@ -47,6 +47,11 @@ interface ChatOptions {
   systemPrompt?: string;
 }
 
+interface ChatFileFormat {
+  title: string;
+  messages: MessageParam[];
+}
+
 export class MCPClient {
   private mcp: Client;
   private anthropic: Anthropic;
@@ -56,6 +61,7 @@ export class MCPClient {
   private rl: readline.Interface | null = null;
   private commandHistory: string[] = [];
   private currentChatFile: string | null = null;
+  private currentChatTitle: string | null = null;
   public model: string;
   public systemPrompt: string | undefined;
 
@@ -111,14 +117,16 @@ export class MCPClient {
   ): Promise<void> {
     try {
       const content = await fs.readFile(chatFile, "utf-8");
-      const messages = JSON.parse(content) as MessageParam[];
-      this.messageHistory = messages;
+      const chatData = JSON.parse(content) as ChatFileFormat;
+      this.messageHistory = chatData.messages;
       this.currentChatFile = chatFile;
+      this.currentChatTitle = chatData.title;
 
       if (printHistory) {
         // Print previous messages
+        console.log(`\nLoading chat: ${chatData.title}`);
         console.log("\nPrevious messages:");
-        for (const msg of messages) {
+        for (const msg of chatData.messages) {
           if (msg.role === "user") {
             console.log("\n> " + msg.content);
           } else if (msg.role === "assistant") {
@@ -162,13 +170,23 @@ export class MCPClient {
         getChatsDir(),
         `chat-${index}-${timestamp}.json`
       );
+      // Set a default title if none exists
+      if (!this.currentChatTitle) {
+        this.currentChatTitle = `Chat ${index} - ${new Date(
+          timestamp
+        ).toLocaleString()}`;
+      }
     }
 
     try {
       await this.ensureDirectories();
+      const chatData: ChatFileFormat = {
+        title: this.currentChatTitle || "Untitled Chat",
+        messages: this.messageHistory,
+      };
       await fs.writeFile(
         this.currentChatFile,
-        JSON.stringify(this.messageHistory, null, 2)
+        JSON.stringify(chatData, null, 2)
       );
     } catch (error) {
       console.error("Failed to save chat file:", error);
