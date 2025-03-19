@@ -4,6 +4,10 @@ import {
   Tool,
   ToolResultBlockParam,
   ToolUseBlockParam,
+  MessageStreamEvent,
+  ContentBlockDeltaEvent,
+  ContentBlockStartEvent,
+  ContentBlockStopEvent,
 } from "@anthropic-ai/sdk/resources/messages/messages.mjs";
 
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
@@ -17,6 +21,7 @@ if (!ANTHROPIC_API_KEY) {
 
 const MAX_TOKENS = 4096;
 const GREEN = "\x1b[32m";
+const BLUE = "\x1b[34m";
 const RESET = "\x1b[0m";
 
 class MCPClient {
@@ -209,9 +214,131 @@ class MCPClient {
     return finalText.join("\n");
   }
 
+  async processQueryStream(query: string, onToken: (token: string) => void) {
+    /**
+     * Process a query using Claude and available tools with streaming response
+     *
+     * @param query - The user's input query
+     * @param onToken - Callback function to handle each token of the response
+     */
+    // Add user query to message history
+    this.messageHistory.push({
+      role: "user",
+      content: query,
+    });
+
+    let currentText = "";
+    let currentToolUse: ToolUseBlockParam | null = null;
+    let currentToolInput = "";
+
+    // Stream the response
+    const stream = await this.anthropic.messages.create({
+      model: this.model,
+      max_tokens: MAX_TOKENS,
+      messages: this.messageHistory,
+      tools: this.tools,
+      stream: true,
+    });
+
+    for await (const chunk of stream) {
+      const event = chunk as MessageStreamEvent;
+
+      if (event.type === "content_block_start") {
+        const start = event as ContentBlockStartEvent;
+        if (start.content_block.type === "tool_use") {
+          currentToolUse = {
+            id: start.content_block.id,
+            type: "tool_use",
+            name: start.content_block.name,
+            input: {},
+          };
+          onToken(
+            `\n${GREEN}[Tool Call] ${start.content_block.name}${RESET}\n`
+          );
+        }
+      } else if (event.type === "content_block_delta") {
+        const delta = event as ContentBlockDeltaEvent;
+        if (delta.delta.type === "text_delta") {
+          currentText += delta.delta.text;
+          onToken(delta.delta.text);
+        } else if (delta.delta.type === "input_json_delta" && currentToolUse) {
+          currentToolInput += delta.delta.partial_json;
+          onToken(`${GREEN}${delta.delta.partial_json}${RESET}`);
+        }
+      } else if (event.type === "content_block_stop" && currentToolUse) {
+        // Parse the complete JSON input
+        try {
+          const input = JSON.parse(currentToolInput);
+          currentToolUse.input = input;
+
+          // Execute tool call
+          const result = await this.mcp.callTool({
+            name: currentToolUse.name,
+            arguments: input,
+          });
+
+          // Add tool use and result to message history
+          this.messageHistory.push({
+            role: "assistant",
+            content: [currentToolUse],
+          });
+
+          const toolResult: ToolResultBlockParam = {
+            tool_use_id: currentToolUse.id,
+            type: "tool_result",
+            content: result.content as string,
+          };
+          this.messageHistory.push({
+            role: "user",
+            content: [toolResult],
+          });
+
+          onToken(
+            `\n${BLUE}Result: ${JSON.stringify(
+              result.content,
+              null,
+              2
+            )}${RESET}\n`
+          );
+
+          // Get next response from Claude with full message history
+          const response = await this.anthropic.messages.create({
+            model: this.model,
+            max_tokens: 1000,
+            messages: this.messageHistory,
+            stream: true,
+          });
+
+          for await (const responseChunk of response) {
+            const responseEvent = responseChunk as MessageStreamEvent;
+            if (responseEvent.type === "content_block_delta") {
+              const delta = responseEvent as ContentBlockDeltaEvent;
+              if (delta.delta.type === "text_delta") {
+                onToken(delta.delta.text);
+              }
+            }
+          }
+        } catch (error) {
+          console.error("Error parsing tool input JSON:", error);
+        }
+
+        currentToolUse = null;
+        currentToolInput = "";
+      }
+    }
+
+    // Add the complete response to message history
+    if (currentText) {
+      this.messageHistory.push({
+        role: "assistant",
+        content: currentText,
+      });
+    }
+  }
+
   async chatLoop() {
     /**
-     * Run an interactive chat loop
+     * Run an interactive chat loop with streaming responses
      */
     const rl = readline.createInterface({
       input: process.stdin,
@@ -230,8 +357,12 @@ class MCPClient {
         ) {
           break;
         }
-        const response = await this.processQuery(message);
-        console.log("\n" + response);
+
+        // Process the query with streaming response
+        await this.processQueryStream(message, (token) => {
+          process.stdout.write(token);
+        });
+        console.log("\n"); // Add a newline after the response
       }
     } finally {
       rl.close();
