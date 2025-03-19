@@ -11,11 +11,12 @@ import fs from "fs/promises";
 import path from "path";
 import os from "os";
 
-// Default config file paths for different OS
-const DEFAULT_CONFIG_PATHS = {
-  darwin: path.join(os.homedir(), "Library", "Application Support", "Claude", "claude_desktop_config.json"),
-  win32: path.join(process.env.APPDATA || "", "Claude", "claude_desktop_config.json"),
-};
+function getDefaultConfigPaths() {
+  return {
+    darwin: path.join(os.homedir(), "Library", "Application Support", "Claude", "claude_desktop_config.json"),
+    win32: path.join(process.env.APPDATA || "", "Claude", "claude_desktop_config.json"),
+  };
+}
 
 interface MCPServerConfig {
   command: string;
@@ -28,16 +29,17 @@ interface ClaudeDesktopConfig {
   };
 }
 
-function getDefaultConfigPath(): string {
-  const platform = process.platform;
-  const configPath = DEFAULT_CONFIG_PATHS[platform as keyof typeof DEFAULT_CONFIG_PATHS];
+export function getDefaultConfigPath(): string {
+  const platform = os.platform();
+  const configPaths = getDefaultConfigPaths();
+  const configPath = configPaths[platform as keyof typeof configPaths];
   if (!configPath) {
     throw new Error(`Unsupported platform: ${platform}`);
   }
   return configPath;
 }
 
-async function parseConfigFile(configPath: string): Promise<string[]> {
+export async function parseConfigFile(configPath: string): Promise<string[]> {
   try {
     const content = await fs.readFile(configPath, "utf-8");
     const config = JSON.parse(content) as ClaudeDesktopConfig;

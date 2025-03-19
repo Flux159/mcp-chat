@@ -27,9 +27,17 @@ const GREEN = "\x1b[32m";
 const BLUE = "\x1b[34m";
 const RESET = "\x1b[0m";
 
-const MCPCHAT_DIR = path.join(os.homedir(), ".mcpchat");
-const HISTORY_FILE = path.join(MCPCHAT_DIR, "history");
-const CHATS_DIR = path.join(MCPCHAT_DIR, "chats");
+function getMCPChatDir(): string {
+  return path.join(os.homedir(), ".mcpchat");
+}
+
+function getHistoryFile(): string {
+  return path.join(getMCPChatDir(), "history");
+}
+
+function getChatsDir(): string {
+  return path.join(getMCPChatDir(), "chats");
+}
 
 interface ChatOptions {
   servers?: string[];
@@ -37,7 +45,7 @@ interface ChatOptions {
   chatFile?: string;
 }
 
-class MCPClient {
+export class MCPClient {
   private mcp: Client;
   private anthropic: Anthropic;
   private transport: StdioClientTransport | null = null;
@@ -58,12 +66,12 @@ class MCPClient {
     this.mcp = new Client({ name: "mcp-client-cli", version: "1.0.0" });
   }
 
-  private async ensureDirectories(): Promise<void> {
+  public async ensureDirectories(): Promise<void> {
     try {
       // Create .mcpchat directory if it doesn't exist
-      await fs.mkdir(MCPCHAT_DIR, { recursive: true });
+      await fs.mkdir(getMCPChatDir(), { recursive: true });
       // Create chats subdirectory if it doesn't exist
-      await fs.mkdir(CHATS_DIR, { recursive: true });
+      await fs.mkdir(getChatsDir(), { recursive: true });
     } catch (error) {
       console.error("Failed to create directories:", error);
       throw error;
@@ -73,7 +81,7 @@ class MCPClient {
   private async loadHistory(): Promise<void> {
     try {
       await this.ensureDirectories();
-      const historyContent = await fs.readFile(HISTORY_FILE, "utf-8");
+      const historyContent = await fs.readFile(getHistoryFile(), "utf-8");
       this.commandHistory = historyContent.split("\n").filter(Boolean);
     } catch (error) {
       // File doesn't exist or is empty, that's fine
@@ -84,7 +92,10 @@ class MCPClient {
   private async saveHistory(): Promise<void> {
     try {
       await this.ensureDirectories();
-      await fs.writeFile(HISTORY_FILE, this.commandHistory.join("\n") + "\n");
+      await fs.writeFile(
+        getHistoryFile(),
+        this.commandHistory.join("\n") + "\n"
+      );
     } catch (error) {
       console.error("Failed to save history:", error);
     }
@@ -138,7 +149,7 @@ class MCPClient {
     if (!this.currentChatFile) {
       // Create new chat file
       const timestamp = Date.now();
-      this.currentChatFile = path.join(CHATS_DIR, `chat-${timestamp}.json`);
+      this.currentChatFile = path.join(getChatsDir(), `chat-${timestamp}.json`);
     }
 
     try {
