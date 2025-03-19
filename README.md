@@ -78,7 +78,7 @@ Choose a model to chat with via CLI with the `-m` flag:
 npx mcp-chat --server "npx mcp-server-kubernetes" -m "claude-3.5"
 ```
 
-Uses the model `claude-3.5` to chat with.
+Uses the model `claude-3.5` to chat with. Note that currently only Anthropic models are supported.
 
 Custom system prompt:
 
@@ -87,42 +87,6 @@ Custom system prompt:
 ```shell
 npx mcp-chat --system "Explain the output to the user in pirate speak." --server "npx mcp-server-kubernetes" -p "List the pods in the default namespace"
 ```
-
-## Agent Mode
-
-You can also run mcp-chat in agent mode to chat with an LLM agent:
-
-```shell
-npx mcp-chat --agent --server "npx mcp-server-kubernetes"
-```
-
-Agent mode starts a prompt, but then will run in an agentic observe-reason-act loop similar to a [ReACT](https://arxiv.org/pdf/2210.03629) LLM agent.
-
-Agent mode with single prompt from command line:
-
-```shell
-npx mcp-chat --agent --server "npx mcp-server-kubernetes" -p "List the pods in the default namespace then create a new nginx pod."
-```
-
-Agent mode supports a yaml config file for more complex agent behavior. Similar to claude_desktop_config.json, you can specify MCP servers in the agent config but also other options like model, system prompt, and custom settings:
-
-```shell
-npx mcp-chat --agent-config "agentconfig.yaml"
-```
-
-Why Yaml and not JSON or [JSONC](https://code.visualstudio.com/docs/languages/json#_json-with-comments)? System prompts can be long so we want support for multiline strings.
-
-## Evaluation mode
-
-mcp-chat is a great way to setup evals (/"integration tests") for MCP servers. You can use the `--eval` flag to run a series of prompts and evaluate the responses.
-
-```shell
-npx mcp-chat --server "npx mcp-server-kubernetes" --eval "evals/kubernetes.yaml"
-```
-
-The output is generated in the out/evals output directory and can be viewed in a CLI or browser. Inspired by [Playwright](https://playwright.dev/) testing for browsers.
-
-Set it up to run in a CI/CD pipeline to evaluate your mcp servers against known good prompts & / validate the outputs.
 
 ## Development
 
