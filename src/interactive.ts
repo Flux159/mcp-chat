@@ -2,6 +2,8 @@ import { Anthropic } from "@anthropic-ai/sdk";
 import {
   MessageParam,
   Tool,
+  ToolResultBlockParam,
+  ToolUseBlockParam,
 } from "@anthropic-ai/sdk/resources/messages/messages.mjs";
 
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
@@ -14,12 +16,15 @@ if (!ANTHROPIC_API_KEY) {
 }
 
 const MAX_TOKENS = 4096;
+const GREEN = "\x1b[32m";
+const RESET = "\x1b[0m";
 
 class MCPClient {
   private mcp: Client;
   private anthropic: Anthropic;
   private transport: StdioClientTransport | null = null;
   private tools: Tool[] = [];
+  private messageHistory: MessageParam[] = [];
 
   constructor(public model: string = "claude-3-5-sonnet-20241022") {
     // Initialize Anthropic client and MCP client
@@ -122,18 +127,17 @@ class MCPClient {
      * @param query - The user's input query
      * @returns Processed response as a string
      */
-    const messages: MessageParam[] = [
-      {
-        role: "user",
-        content: query,
-      },
-    ];
+    // Add user query to message history
+    this.messageHistory.push({
+      role: "user",
+      content: query,
+    });
 
-    // Initial Claude API call
+    // Initial Claude API call with full message history
     const response = await this.anthropic.messages.create({
       model: this.model,
       max_tokens: MAX_TOKENS,
-      messages,
+      messages: this.messageHistory,
       tools: this.tools,
     });
 
@@ -144,6 +148,11 @@ class MCPClient {
     for (const content of response.content) {
       if (content.type === "text") {
         finalText.push(content.text);
+        // Add assistant's text response to message history
+        this.messageHistory.push({
+          role: "assistant",
+          content: content.text,
+        });
       } else if (content.type === "tool_use") {
         // Execute tool call
         const toolName = content.name;
@@ -155,25 +164,45 @@ class MCPClient {
         });
         toolResults.push(result);
         finalText.push(
-          `[Calling tool ${toolName} with args ${JSON.stringify(toolArgs)}]`
+          `${GREEN}[Tool Call] ${toolName}${RESET}\n${GREEN}Arguments: ${JSON.stringify(
+            toolArgs,
+            null,
+            2
+          )}${RESET}`
         );
 
-        // Continue conversation with tool results
-        messages.push({
-          role: "user",
-          content: result.content as string,
+        // Add tool use to message history
+        this.messageHistory.push({
+          role: "assistant",
+          content: [content as ToolUseBlockParam],
         });
 
-        // Get next response from Claude
+        // Add tool result to message history
+        const toolResult: ToolResultBlockParam = {
+          tool_use_id: content.id,
+          type: "tool_result",
+          content: result.content as string,
+        };
+        this.messageHistory.push({
+          role: "user",
+          content: [toolResult],
+        });
+
+        // Get next response from Claude with full message history
         const response = await this.anthropic.messages.create({
           model: this.model,
           max_tokens: 1000,
-          messages,
+          messages: this.messageHistory,
         });
 
-        finalText.push(
-          response.content[0].type === "text" ? response.content[0].text : ""
-        );
+        const responseText =
+          response.content[0].type === "text" ? response.content[0].text : "";
+        finalText.push(responseText);
+        // Add assistant's final response to message history
+        this.messageHistory.push({
+          role: "assistant",
+          content: responseText,
+        });
       }
     }
 
@@ -191,11 +220,14 @@ class MCPClient {
 
     try {
       console.log("\nMCP Client Started!");
-      console.log("Type your queries or 'quit' to exit.");
+      console.log("Type your queries or 'exit' or 'quit' to close.");
 
       while (true) {
         const message = await rl.question("\nQuery: ");
-        if (message.toLowerCase() === "quit") {
+        if (
+          message.toLowerCase() === "quit" ||
+          message.toLowerCase() === "exit"
+        ) {
           break;
         }
         const response = await this.processQuery(message);
@@ -225,7 +257,6 @@ async function setupChat(options: ChatOptions): Promise<MCPClient> {
 
   if (options.servers) {
     for (const server of options.servers) {
-      console.log(server);
       try {
         await mcpClient.connectToServer(server);
       } catch (err) {

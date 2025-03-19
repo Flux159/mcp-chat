@@ -55,7 +55,7 @@ const options = setupProgram(process.argv);
 async function main() {
   try {
     // Default interactive mode if no specific mode is selected
-    console.log(options);
+    // console.log(options);
 
     if (!options.prompt && !options.eval) {
       await startInteractiveChat({
