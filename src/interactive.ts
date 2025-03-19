@@ -344,31 +344,6 @@ export class MCPClient {
     }
   }
 
-  private formatToolResult(result: any): string {
-    /**
-     * Format a tool result, attempting to parse and pretty print JSON if possible
-     * @param result - The tool result to format
-     * @returns Formatted string representation of the result
-     */
-    try {
-      // Try to parse the first text content as JSON
-      if (
-        result.content &&
-        Array.isArray(result.content) &&
-        result.content[0]?.text
-      ) {
-        const parsedJson = JSON.parse(result.content[0].text);
-        return JSON.stringify(parsedJson, null, 2);
-      }
-      // If that fails, try to parse the entire result as JSON
-      const parsedJson = JSON.parse(result.content);
-      return JSON.stringify(parsedJson, null, 2);
-    } catch (e) {
-      // If all JSON parsing fails, return the raw content
-      return result.content;
-    }
-  }
-
   private async createRequest(
     stream: true
   ): Promise<Stream<Anthropic.Messages.RawMessageStreamEvent>>;
@@ -384,75 +359,6 @@ export class MCPClient {
       stream,
       system: this.systemPrompt,
     });
-  }
-
-  private async handleNonStreamResponse(
-    response: Anthropic.Messages.Message
-  ): Promise<string> {
-    const finalText = [];
-
-    for (const content of response.content) {
-      if (content.type === "text") {
-        finalText.push(content.text);
-        this.messageHistory.push({
-          role: "assistant",
-          content: content.text,
-        });
-      } else if (content.type === "tool_use") {
-        const toolName = content.name;
-        const toolArgs = content.input as { [x: string]: unknown } | undefined;
-
-        const result = await this.mcp.callTool({
-          name: toolName,
-          arguments: toolArgs,
-        });
-
-        // Pretty print the result
-        const formattedResult = JSON.stringify(result, null, 2);
-        finalText.push(
-          `${GREEN}[Tool Call] ${toolName}${RESET}\n${GREEN}Arguments: ${JSON.stringify(
-            toolArgs,
-            null,
-            2
-          )}${RESET}\n${BLUE}Result: ${formattedResult}${RESET}`
-        );
-
-        this.messageHistory.push({
-          role: "assistant",
-          content: [content as ToolUseBlockParam],
-        });
-
-        const toolResult: ToolResultBlockParam = {
-          tool_use_id: content.id,
-          type: "tool_result",
-          content: result.content as string,
-        };
-        this.messageHistory.push({
-          role: "user",
-          content: [toolResult],
-        });
-
-        // Recursively handle any additional tool calls
-        const additionalResponse = await this.createRequest(false);
-        const additionalText = await this.handleNonStreamResponse(
-          additionalResponse
-        );
-        finalText.push(additionalText);
-      }
-    }
-
-    return finalText.join("\n");
-  }
-
-  async processQuery(query: string) {
-    // Add user query to message history
-    this.messageHistory.push({
-      role: "user",
-      content: query,
-    });
-
-    const response = await this.createRequest(false);
-    return this.handleNonStreamResponse(response);
   }
 
   private async handleStreamResponse(
@@ -725,13 +631,10 @@ export async function runPrompt(options: ChatOptions & { prompt: string }) {
       await mcpClient.loadChatFile(options.chatFile, false);
     }
 
-    // const response = await mcpClient.processQuery(options.prompt);
-    // const response = await mcpClient.processQueryStream()
     await mcpClient.processQueryStream(options.prompt, (token) => {
       process.stdout.write(token);
     });
     console.log("\n"); // Add a newline after the response
-    // console.log(response);
 
     // Save the chat file if we loaded one or created a new one
     await mcpClient.saveChatFile();

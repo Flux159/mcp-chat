@@ -4,31 +4,15 @@ Open Source Generic MCP Client for testing & evaluating mcp servers and agents
 
 ## Quickstart
 
-Make sure that you have `ANTHROPIC_API_KEY` exported in your environment or in a .env file in the root of the project.
-You can get an API key by signing up at the [Anthropic Console keys page](https://console.anthropic.com/settings/keys).
+Make sure that you have `ANTHROPIC_API_KEY` exported in your environment or in a .env file in the root of the project. You can get an API key by signing up at the [Anthropic Console keys page](https://console.anthropic.com/settings/keys).
 
-Simple use case that spawns a chat prompt with two MCP servers from CLI:
+Simple use case that spawns an interactive chat prompt with the filesystem MCP server from CLI:
 
 ```shell
 npx mcp-chat --server "npx -y @modelcontextprotocol/server-filesystem /Users/username/Desktop"
 ```
 
 This will open up a chat prompt that you can use to interact with the servers and chat with an LLM.
-
-## For developers of mcp-servers
-
-You can pass in a local build of a python or node mcp-server to test it out with mcp-chat:
-
-```shell
-# Directly executing built script
-npx mcp-chat --server "/path/to/mcp-server-kubernetes/dist/index.js"
-# Using node / bun
-npx mcp-chat --server "node /path/to/mcp-server-kubernetes/dist/index.js"
-# Python: Using uv
-npx mcp-chat --server "uv --directory /path/to/mcp-server-weather/ run weather.py"
-# Using python / python3 - make sure to run in venv or install deps globally
-npx mcp-chat --server "/path/to/mcp-server-weather/weather.py"
-```
 
 ## Config
 
@@ -86,6 +70,28 @@ Custom system prompt:
 
 ```shell
 npx mcp-chat --system "Explain the output to the user in pirate speak." --server "npx mcp-server-kubernetes" -p "List the pods in the default namespace"
+```
+
+## For developers of mcp-servers
+
+You can pass in a local build of a python or node mcp-server to test it out with mcp-chat:
+
+Node JS:
+
+```shell
+# Directly executing built script
+npx mcp-chat --server "/path/to/mcp-server-kubernetes/dist/index.js"
+# Using node / bun
+npx mcp-chat --server "node /path/to/mcp-server-kubernetes/dist/index.js"
+```
+
+Python:
+
+```shell
+# Python: Using uv
+npx mcp-chat --server "uv --directory /path/to/mcp-server-weather/ run weather.py"
+# Using python / python3 - make sure to run in venv or install deps globally
+npx mcp-chat --server "/path/to/mcp-server-weather/weather.py"
 ```
 
 ## Development

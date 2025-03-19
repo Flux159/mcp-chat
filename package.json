@@ -35,7 +35,7 @@
     "gemini"
   ],
   "engines": {
-    "node": ">-18"
+    "node": ">=18"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
