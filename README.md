@@ -148,6 +148,19 @@ Publishing Docker:
 bun run dockerbuild
 ```
 
+### Project Structure
+
+```
+├── src/
+│   ├── index.ts              # Main server implementation
+│   ├── constants.ts              # Type re-exports
+│   ├── config/              # Configuration files
+│   │   ├── container-templates.ts  # Container configurations
+│   │   ├── server-config.ts       # Server settings
+│   │   ├── deployment-config.ts    # Deployment schemas
+│   │   └── ...
+```
+
 ## Publishing new release
 
 Go to the [releases](https://github.com/Flux159/mcp-chat/releases) page, click on "Draft New Release", click "Choose a tag" and create a new tag by typing out a new version number using "v{major}.{minor}.{patch}" semver format. Then, write a release title "Release v{major}.{minor}.{patch}" and description / changelog if necessary and click "Publish Release".
