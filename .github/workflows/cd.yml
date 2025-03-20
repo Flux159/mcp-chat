@@ -9,12 +9,6 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Debug
-        run: |
-          echo ${{ github.event.repository.name }}
-          echo ${{ github.event.repository.owner.login }}
-          echo ${{ github.event.repository.full_name }}
-
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -91,4 +85,4 @@ jobs:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: flux159/mcp-chat:latest,flux159/mcp-chat:${{ steps.version.outputs.current-version }}
+          tags: flux159/${{ github.event.repository.name }}:latest,flux159/${{ github.event.repository.name }}:${{ steps.version.outputs.current-version }}
