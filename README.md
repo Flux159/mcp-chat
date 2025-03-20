@@ -50,6 +50,16 @@ On linux, you can just make a claude_desktop_config.json anywhere and specify th
 }
 ```
 
+## Features
+
+- [x] Run via CLI in interactive mode or directly pass prompts with `-p`
+- [x] Connect to any MCP server (JS, Python, Docker) in production or during development
+- [x] Choose between models with `-m`
+- [x] Customize system prompt with `--system`
+- [x] Saves chat history with settings in ~/.mcpchat/chats
+- [x] Save and restore commands in ~/.mcpchat/history
+- [x] View tool call output and arguments directly in chat to help debug mcp servers
+
 ## CLI Usage
 
 Run prompts via CLI with the `-p` flag:
