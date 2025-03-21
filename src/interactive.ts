@@ -580,6 +580,9 @@ export class MCPClient {
         // Save chat after each response
         await this.saveChatFile();
       }
+    } catch (err) {
+      console.error("Error with request");
+      console.error(err);
     } finally {
       this.rl.close();
       this.rl = null;
