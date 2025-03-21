@@ -152,13 +152,12 @@ bun run dockerbuild
 
 ```
 ├── src/
-│   ├── index.ts              # Main server implementation
-│   ├── constants.ts              # Type re-exports
-│   ├── config/              # Configuration files
-│   │   ├── container-templates.ts  # Container configurations
-│   │   ├── server-config.ts       # Server settings
-│   │   ├── deployment-config.ts    # Deployment schemas
-│   │   └── ...
+│   ├── index.ts            # Main client implementation & CLI params
+│   ├── constants.ts        # Default constants
+│   ├── interactive.ts      # Interactive chat prompt handling & logic
+├── test/                   # Test files
+│   ├── cli.test.ts         # Test CLI params
+│   ├── config.test.ts      # Test config file parsing
 ```
 
 ## Publishing new release
