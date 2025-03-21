@@ -13,7 +13,7 @@ Make sure that you have `ANTHROPIC_API_KEY` exported in your environment or in a
 Simple use case that spawns an interactive chat prompt with the filesystem MCP server from CLI:
 
 ```shell
-npx mcp-chat --server "npx -y @modelcontextprotocol/server-filesystem /Users/username/Desktop"
+npx mcp-chat --server "npx -y @modelcontextprotocol/server-filesystem /Users/$USER/Desktop"
 ```
 
 This will open up a chat prompt that you can use to interact with the servers and chat with an LLM.
