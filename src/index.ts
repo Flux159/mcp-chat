@@ -11,6 +11,7 @@ import fs from "fs/promises";
 import path from "path";
 import os from "os";
 import { DEFAULT_SYSTEM_PROMPT } from "./constants.js";
+import { createDevServer } from "./devserver.js";
 
 function getDefaultConfigPaths() {
   return {
@@ -85,12 +86,13 @@ export function setupProgram(argv?: readonly string[]): ProgramOptions {
     .option(
       "--chat <file>",
       "Load and continue a previous chat session from a JSON file"
-    );
+    )
+    .option("--web", "Start the web development server");
 
   program.parse(argv);
 
   const options = program.opts() as ProgramOptions;
-  options.server = servers; // Use our collected servers
+  options.server = servers;
 
   return options;
 }
@@ -104,12 +106,18 @@ interface ProgramOptions {
   eval?: string;
   chat?: string;
   system?: string;
+  web?: boolean;
 }
 
 const options = setupProgram(process.argv);
 
 async function main() {
   try {
+    if (options.web) {
+      await createDevServer();
+      return;
+    }
+
     let servers = options.server || [];
     
     // If configPath is "default" or a specific path is provided, parse it
