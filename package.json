@@ -16,8 +16,8 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc && shx chmod +x dist/*.js",
-    "dev": "tsc && bun run start",
+    "build": "rm -r dist/ && tsc && vite build && shx chmod +x dist/*.js",
+    "dev": "tsc && NODE_ENV=dev bun run start",
     "start": "node dist/index.js",
     "test": "vitest run",
     "prepublishOnly": "npm run build",
@@ -40,18 +40,30 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
     "@modelcontextprotocol/sdk": "^1.7.0",
+    "body-parser": "^2.1.0",
     "commander": "^13.1.0",
+    "cookie-parser": "^1.4.7",
     "dotenv": "^16.4.7",
+    "express": "^5.0.1",
     "js-yaml": "^4.1.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
     "yaml": "^2.7.0",
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@types/body-parser": "^1.19.5",
+    "@types/cookie-parser": "^1.4.8",
+    "@types/express": "^5.0.1",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^22.9.3",
+    "@types/react": "^19.0.12",
+    "@types/react-dom": "^19.0.4",
+    "@vitejs/plugin-react": "4.3.4",
     "shx": "^0.3.4",
     "tsx": "4.19.3",
     "typescript": "^5.6.2",
+    "vite": "6.2.2",
     "vitest": "2.1.9"
   }
 }
