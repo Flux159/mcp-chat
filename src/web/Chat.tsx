@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import styles from "./Chat.module.css";
+import ReactMarkdown from "react-markdown";
 import { ChatSettings } from "./ChatSettings";
 import {
   ChatSettings as ChatSettingsType,
@@ -210,7 +211,8 @@ export function Chat({ chatId, onTitleChange }: ChatProps) {
 
   const renderMessageContent = (content: string | any[]) => {
     if (typeof content === "string") {
-      return content;
+      // Use markdown for assistant messages, plain text for user messages
+      return <ReactMarkdown>{content}</ReactMarkdown>;
     }
     if (Array.isArray(content)) {
       return content.map((item: ToolInteraction, index: number) => (

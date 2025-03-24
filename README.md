@@ -18,6 +18,16 @@ npx mcp-chat --server "npx -y @modelcontextprotocol/server-filesystem /Users/$US
 
 This will open up a chat prompt that you can use to interact with the servers and chat with an LLM.
 
+## Web mode
+
+You can also run mcp-chat in web mode by specifying the `--web` flag (make sure to have `ANTHROPIC_API_KEY` exported in your environment):
+
+```shell
+npx mcp-chat --web
+```
+
+In web mode, you can start new chats, send messages to the model, and dynamically configure the mcp servers via the UI - no need to specify on the command line. In addition, chats created via the Web UI are saved to ~/.mcpchats/chats just like chats created via the CLI.
+
 ## Config
 
 You can also just specify your claude_desktop_config.json (Mac):
