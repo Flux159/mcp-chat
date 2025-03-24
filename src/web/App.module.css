@@ -1,0 +1,69 @@
+.app {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+}
+
+.sidebar {
+  width: 400px;
+  border-right: 1px solid #ddd;
+  padding: 1rem;
+  overflow-y: auto;
+  background-color: white;
+}
+
+.mainContent {
+  flex: 1;
+  height: 100%;
+  overflow: hidden;
+}
+
+.chatsList {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.chatItem {
+  padding: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.chatItem:hover {
+  background-color: #f5f5f5;
+}
+
+.selectedChat {
+  background-color: #e3f2fd;
+  border-color: #2196f3;
+}
+
+.chatMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+  color: #666;
+  margin-top: 0.5rem;
+}
+
+.error {
+  color: #d32f2f;
+  padding: 1rem;
+  background-color: #ffebee;
+  border-radius: 0.5rem;
+  margin-top: 1rem;
+}
+
+.noChatSelected {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #666;
+  font-size: 1.1rem;
+} 
