@@ -17,5 +17,5 @@
     "noFallthroughCasesInSwitch": true,
     "allowSyntheticDefaultImports": true
   },
-  "include": ["src/web/**/*"]
+  "include": ["src/web/**/*", "@types/types.d.ts"]
 }
