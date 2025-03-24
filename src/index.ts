@@ -87,7 +87,14 @@ export function setupProgram(argv?: readonly string[]): ProgramOptions {
       "--chat <file>",
       "Load and continue a previous chat session from a JSON file"
     )
-    .option("--web", "Start the web development server");
+    .option("--web [port]", "Start the web development server with optional port", (val) => {
+      if (val === undefined) return true;
+      const port = parseInt(val, 10);
+      if (isNaN(port)) {
+        throw new Error('Port must be a number');
+      }
+      return port;
+    });
 
   program.parse(argv);
 
@@ -106,7 +113,7 @@ interface ProgramOptions {
   eval?: string;
   chat?: string;
   system?: string;
-  web?: boolean;
+  web?: number | boolean;
 }
 
 const options = setupProgram(process.argv);
@@ -114,7 +121,9 @@ const options = setupProgram(process.argv);
 async function main() {
   try {
     if (options.web) {
-      await createDevServer();
+      console.log(options.web);
+      const port = typeof options.web === 'number' ? options.web : undefined;
+      await createDevServer(port);
       return;
     }
 
