@@ -16,6 +16,7 @@ import fs from "fs/promises";
 import path from "path";
 import os from "os";
 import { Stream } from "@anthropic-ai/sdk/streaming.mjs";
+import { DEFAULT_MODEL } from "./constants.js";
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 if (!ANTHROPIC_API_KEY) {
@@ -72,7 +73,7 @@ export class MCPClient {
   public systemPrompt: string | undefined;
 
   constructor(private options: ChatOptions = {}) {
-    this.model = options.model || "claude-3-5-sonnet-20241022";
+    this.model = options.model || DEFAULT_MODEL;
     this.systemPrompt = options.systemPrompt;
 
     // Initialize Anthropic client and MCP client
