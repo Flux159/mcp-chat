@@ -12,6 +12,6 @@
     "declaration": true,
     "resolveJsonModule": true
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "@types/types.d.ts"],
   "exclude": ["node_modules", "dist", "src/web/**/*"]
 }
