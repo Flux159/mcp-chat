@@ -1,0 +1,38 @@
+.app {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.error {
+  color: #dc2626;
+  padding: 10px;
+  border: 1px solid #dc2626;
+  border-radius: 4px;
+  margin: 10px 0;
+}
+
+.chatsList {
+  margin-top: 20px;
+}
+
+.chatItem {
+  padding: 15px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  background-color: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.chatItem h3 {
+  margin: 0 0 10px 0;
+  color: #111827;
+}
+
+.chatMeta {
+  display: flex;
+  gap: 20px;
+  color: #6b7280;
+  font-size: 0.9em;
+} 
