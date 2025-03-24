@@ -5,6 +5,7 @@ import { fileURLToPath } from "url";
 import path from "path";
 import bodyParser from "body-parser";
 import cookieParser from "cookie-parser";
+import { loadRoutes } from "./loadRoutes.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -15,6 +16,15 @@ const HMR_PORT = 24679; // Custom WebSocket port for HMR
 export async function createDevServer() {
   const app = express();
   const isDev = process.env.NODE_ENV === "dev";
+
+  const routesDir = path.join(__dirname, "server", "api");
+
+  app.use(bodyParser.json());
+  app.use(bodyParser.urlencoded({ extended: true }));
+  app.use(cookieParser());
+
+  // Load routes automatically
+  await loadRoutes(app, routesDir);
 
   if (isDev) {
     // Create Vite server in middleware mode for development
@@ -37,10 +47,6 @@ export async function createDevServer() {
     });
     app.use(router);
   }
-
-  app.use(bodyParser.json());
-  app.use(bodyParser.urlencoded({ extended: true }));
-  app.use(cookieParser());
 
   app.listen(SERVER_PORT, () => {
     console.log(`Server running at http://localhost:${SERVER_PORT}`);
