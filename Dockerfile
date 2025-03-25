@@ -8,6 +8,8 @@ RUN apt-get update && apt-get install -y curl
 FROM base AS dependencies
 RUN npm install
 COPY tsconfig.json .
+COPY tsconfig.web.json .
+COPY vite.config.ts .
 COPY src ./src
 RUN npm run build
 

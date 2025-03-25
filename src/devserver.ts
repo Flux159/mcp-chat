@@ -1,6 +1,5 @@
 import "dotenv/config";
 import express from "express";
-import { createServer as createViteServer } from "vite";
 import { fileURLToPath } from "url";
 import path from "path";
 import bodyParser from "body-parser";
@@ -29,6 +28,7 @@ export async function createDevServer(port?: number) {
 
   if (isDev) {
     // Create Vite server in middleware mode for development
+    const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
       server: {
         middlewareMode: true,
