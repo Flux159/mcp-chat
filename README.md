@@ -18,16 +18,6 @@ npx mcp-chat --server "npx -y @modelcontextprotocol/server-filesystem /Users/$US
 
 This will open up a chat prompt that you can use to interact with the servers and chat with an LLM.
 
-## Web mode
-
-You can also run mcp-chat in web mode by specifying the `--web` flag (make sure to have `ANTHROPIC_API_KEY` exported in your environment):
-
-```shell
-npx mcp-chat --web
-```
-
-In web mode, you can start new chats, send messages to the model, and dynamically configure the mcp servers via the UI - no need to specify on the command line. In addition, chats created via the Web UI are saved to ~/.mcpchats/chats just like chats created via the CLI.
-
 ## Config
 
 You can also just specify your claude_desktop_config.json (Mac):
@@ -42,32 +32,27 @@ Or (Windows):
 npx mcp-chat --config "%APPDATA%\Claude\claude_desktop_config.json"
 ```
 
-On linux, you can just make a claude_desktop_config.json anywhere and specify the path to it. Example json below:
+## Web mode
 
-```json
-{
-  "mcpServers": {
-    "filesystem": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-filesystem",
-        "/Users/username/Desktop",
-        "/Users/username/Downloads"
-      ]
-    }
-  }
-}
+https://github.com/user-attachments/assets/b7e8a648-8084-4955-8cdf-fc6eb141572e
+
+You can also run mcp-chat in web mode by specifying the `--web` flag (make sure to have `ANTHROPIC_API_KEY` exported in your environment):
+
+```shell
+npx mcp-chat --web
 ```
+
+In web mode, you can start new chats, send messages to the model, and dynamically configure the mcp servers via the UI - no need to specify on the command line. In addition, chats created via the Web UI are saved to ~/.mcpchats/chats just like chats created via the CLI.
 
 ## Features
 
 - [x] Run via CLI in interactive mode or directly pass prompts with `-p`
+- [x] Web mode to chat with models via a web interface `--web`
 - [x] Connect to any MCP server (JS, Python, Docker) in production or during development
 - [x] Choose between models with `-m`
 - [x] Customize system prompt with `--system`
-- [x] Saves chat history with settings in ~/.mcpchat/chats
-- [x] Save and restore commands in ~/.mcpchat/history
+- [x] Saves chat history with settings in `~/.mcpchat/chats` including web chats
+- [x] Save and restore commands in `~/.mcpchat/history`
 - [x] View tool call output and arguments directly in chat to help debug mcp servers
 
 ## CLI Usage
