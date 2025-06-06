@@ -81,6 +81,14 @@ Custom system prompt:
 npx mcp-chat --system "Explain the output to the user in pirate speak." --server "npx mcp-server-kubernetes" -p "List the pods in the default namespace"
 ```
 
+## ENV vars
+
+Mcp-chat supports passing through env vars to mcp servers. This is not standardized in the mcp spec though and other clients may not do this with dynamic env var values - read more [here](https://github.com/Flux159/mcp-server-kubernetes/issues/148#issuecomment-2950181666) about standard stdio mcp clients.
+
+```shell
+KUBECONFIG="~/.kube/config" npx mcp-chat --server "npx mcp-server-kubernetes"
+```
+
 ## For developers of mcp-servers
 
 You can pass in a local build of a python or node mcp-server to test it out with mcp-chat:
