@@ -278,6 +278,7 @@ export class MCPClient {
         this.transport = new StdioClientTransport({
           command,
           args,
+          env: { ...process.env } as Record<string, string>,
         });
         this.mcp.connect(this.transport);
         serverWithoutCommand = args.join(" ");
@@ -291,6 +292,7 @@ export class MCPClient {
         this.transport = new StdioClientTransport({
           command,
           args,
+          env: { ...process.env } as Record<string, string>,
         });
         this.mcp.connect(this.transport);
         serverWithoutCommand = args.join(" ");
@@ -304,6 +306,7 @@ export class MCPClient {
         this.transport = new StdioClientTransport({
           command,
           args,
+          env: { ...process.env } as Record<string, string>,
         });
         this.mcp.connect(this.transport);
         serverWithoutCommand = args.join(" ");
@@ -338,6 +341,7 @@ export class MCPClient {
         this.transport = new StdioClientTransport({
           command,
           args,
+          env: { ...process.env } as Record<string, string>,
         });
         this.mcp.connect(this.transport);
       }
