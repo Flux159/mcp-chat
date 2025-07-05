@@ -1,11 +1,8 @@
 #!/usr/bin/env node
 
 import { config } from "dotenv";
-config(); // load environment variables from .env
-
 import { Command } from "commander";
-import pkg from "../package.json" with { type: "json" }; // Note that for prettier you may need to remove this & use the line below because prettier can't parse the `with` keyword
-// const pkg = require("../package.json");
+import pkg from "../package.json" with { type: "json" };
 import { startInteractiveChat, runPrompt } from "./interactive.js";
 import fs from "fs/promises";
 import path from "path";
@@ -13,10 +10,22 @@ import os from "os";
 import { DEFAULT_SYSTEM_PROMPT } from "./constants.js";
 import { createDevServer } from "./devserver.js";
 
+config(); // load environment variables from .env
+
 function getDefaultConfigPaths() {
   return {
-    darwin: path.join(os.homedir(), "Library", "Application Support", "Claude", "claude_desktop_config.json"),
-    win32: path.join(process.env.APPDATA || "", "Claude", "claude_desktop_config.json"),
+    darwin: path.join(
+      os.homedir(),
+      "Library",
+      "Application Support",
+      "Claude",
+      "claude_desktop_config.json"
+    ),
+    win32: path.join(
+      process.env.APPDATA || "",
+      "Claude",
+      "claude_desktop_config.json"
+    ),
   };
 }
 
@@ -49,7 +58,9 @@ export async function parseConfigFile(configPath: string): Promise<string[]> {
     const servers: string[] = [];
     for (const [name, serverConfig] of Object.entries(config.mcpServers)) {
       // Convert the config to our server format
-      const serverString = [serverConfig.command, ...serverConfig.args].join(" ");
+      const serverString = [serverConfig.command, ...serverConfig.args].join(
+        " "
+      );
       servers.push(serverString);
     }
     return servers;
@@ -82,19 +93,26 @@ export function setupProgram(argv?: readonly string[]): ProgramOptions {
         return servers;
       }
     )
-    .option("--system <system_prompt>", "Specify a custom system prompt to run.")
+    .option(
+      "--system <system_prompt>",
+      "Specify a custom system prompt to run."
+    )
     .option(
       "--chat <file>",
       "Load and continue a previous chat session from a JSON file"
     )
-    .option("--web [port]", "Start the web development server with optional port", (val) => {
-      if (val === undefined) return true;
-      const port = parseInt(val, 10);
-      if (isNaN(port)) {
-        throw new Error('Port must be a number');
+    .option(
+      "--web [port]",
+      "Start the web development server with optional port",
+      (val) => {
+        if (val === undefined) return true;
+        const port = parseInt(val, 10);
+        if (isNaN(port)) {
+          throw new Error("Port must be a number");
+        }
+        return port;
       }
-      return port;
-    });
+    );
 
   program.parse(argv);
 
@@ -121,19 +139,18 @@ const options = setupProgram(process.argv);
 async function main() {
   try {
     if (options.web) {
-      const port = typeof options.web === 'number' ? options.web : undefined;
+      const port = typeof options.web === "number" ? options.web : undefined;
       await createDevServer(port);
       return;
     }
 
     let servers = options.server || [];
-    
+
     // If configPath is "default" or a specific path is provided, parse it
     if (options.config) {
-      const configPath = options.config === "default" 
-        ? getDefaultConfigPath() 
-        : options.config;
-      
+      const configPath =
+        options.config === "default" ? getDefaultConfigPath() : options.config;
+
       const configServers = await parseConfigFile(configPath);
       servers = [...servers, ...configServers];
     }
