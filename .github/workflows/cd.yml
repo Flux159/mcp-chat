@@ -5,6 +5,10 @@ on:
     tags:
       - v*
 
+permissions:
+  id-token: write
+  contents: write
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -59,13 +63,19 @@ jobs:
       - name: Build For production
         run: bun run build
 
+      - name: Setup Node.js for NPM publish
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Update npm for OIDC support
+        run: npm install -g npm@latest
+
       - name: Publish to NPM
-        run: |
-          echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > ~/.npmrc
-          echo "//registry.npmjs.org/:always-auth=true" >> ~/.npmrc
-          npm publish
         env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: true
+        run: npm publish --provenance
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
