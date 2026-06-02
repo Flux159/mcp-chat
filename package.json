@@ -66,6 +66,6 @@
     "typescript": "^5.8.3",
     "prettier": "3.6.2",
     "vite": "6.2.7",
-    "vitest": "2.1.9"
+    "vitest": "4.1.0"
   }
 }
