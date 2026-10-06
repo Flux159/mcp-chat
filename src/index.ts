@@ -87,7 +87,7 @@ export function setupProgram(argv?: readonly string[]): ProgramOptions {
     .option("-e, --eval <path>", "Run evaluation mode with specified JSON file")
     .option(
       "-s, --server <command>",
-      "Specify MCP server command to run",
+      "Specify MCP server command or Streamable HTTP URL",
       (val: string) => {
         servers.push(val);
         return servers;

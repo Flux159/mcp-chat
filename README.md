@@ -114,6 +114,18 @@ Custom system prompt:
 npx mcp-chat --system "Explain the output to the user in pirate speak." --server "npx mcp-server-kubernetes" -p "List the pods in the default namespace"
 ```
 
+## Remote MCP servers
+
+Pass a Streamable HTTP endpoint to `--server` instead of a local command:
+
+```shell
+npx mcp-chat --server "https://search.parallel.ai/mcp" -p "Search the web for the MCP Streamable HTTP specification and summarize it with source links."
+```
+
+[Parallel Search MCP](https://docs.parallel.ai/integrations/mcp/search-mcp) provides `web_search` and `web_fetch` without a Parallel API key. The anonymous service is free for exploration and light use, with rate limits. You still need `ANTHROPIC_API_KEY` for the chat model.
+
+In web mode, enter `https://search.parallel.ai/mcp` as the server string in chat settings. Remote URLs are saved in chat settings like local server commands. This supports Streamable HTTP endpoints; legacy SSE endpoints and authenticated remote servers are not covered by this example.
+
 ## ENV vars
 
 Mcp-chat supports passing through env vars to mcp servers. This is not standardized in the mcp spec though and other clients may not do this with dynamic env var values - read more [here](https://github.com/Flux159/mcp-server-kubernetes/issues/148#issuecomment-2950181666) about standard stdio mcp clients.
