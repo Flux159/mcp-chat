@@ -1,4 +1,4 @@
-FROM node:22-bookworm-slim AS base
+FROM node:24-bookworm-slim AS base
 WORKDIR /usr/local/app
 COPY package.json .
 
@@ -17,7 +17,7 @@ RUN npm run build
 FROM base AS release
 RUN useradd -m appuser && chown -R appuser /usr/local/app
 ENV NODE_ENV=production
-RUN npm install --only=production
+RUN npm install --omit=dev
 COPY --from=dependencies /usr/local/app/dist ./dist
 USER appuser
 CMD ["node", "dist/index.js"]
