@@ -75,7 +75,7 @@ describe("MCP Chat CLI", () => {
       "--server",
       "npx mcp-server-kubernetes",
       "-m",
-      "claude-3-opus-20240229",
+      "claude-opus-4-8",
       "-p",
       "List my pods",
     ];
@@ -93,7 +93,7 @@ describe("MCP Chat CLI", () => {
     // Verify runPrompt was called with correct arguments
     expect(runPrompt).toHaveBeenCalledWith({
       servers: ["npx mcp-server-kubernetes"],
-      model: "claude-3-opus-20240229",
+      model: "claude-opus-4-8",
       prompt: "List my pods",
     });
     expect(runPrompt).toHaveBeenCalledTimes(1);
