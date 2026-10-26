@@ -38,7 +38,7 @@ vi.mock("../src/interactive.js", async () => {
       currentChatFile = null;
       rl = null;
       commandHistory = [];
-      model = "claude-3-5-sonnet-20241022";
+      model = "claude-sonnet-5-5";
     },
   };
 });
