@@ -116,15 +116,13 @@ npx mcp-chat --system "Explain the output to the user in pirate speak." --server
 
 ## Remote MCP servers
 
-Pass a Streamable HTTP endpoint to `--server` instead of a local command:
+Pass a [Streamable HTTP](https://modelcontextprotocol.io/specification/2025-06-18/basic/transports#streamable-http) endpoint URL to `--server` instead of a local command:
 
 ```shell
-npx mcp-chat --server "https://search.parallel.ai/mcp" -p "Search the web for the MCP Streamable HTTP specification and summarize it with source links."
+npx mcp-chat --server "https://example.com/mcp" -p "What tools do you have available?"
 ```
 
-[Parallel Search MCP](https://docs.parallel.ai/integrations/mcp/search-mcp) provides `web_search` and `web_fetch` without a Parallel API key. The anonymous service is free for exploration and light use, with rate limits. You still need `ANTHROPIC_API_KEY` for the chat model.
-
-In web mode, enter `https://search.parallel.ai/mcp` as the server string in chat settings. Remote URLs are saved in chat settings like local server commands. This supports Streamable HTTP endpoints; legacy SSE endpoints and authenticated remote servers are not covered by this example.
+Any `http://` or `https://` server string is treated as a Streamable HTTP endpoint, both in the CLI and in web mode chat settings. Legacy SSE endpoints and servers that require authentication are not currently supported.
 
 ## ENV vars
 
