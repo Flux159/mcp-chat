@@ -11,6 +11,8 @@ import {
 
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+import pkg from "../package.json" with { type: "json" };
 import readline from "readline/promises";
 import fs from "fs/promises";
 import path from "path";
@@ -62,7 +64,7 @@ interface ChatFileFormat {
 export class MCPClient {
   private mcp: Client;
   private anthropic: Anthropic;
-  private transport: StdioClientTransport | null = null;
+  private transport: StdioClientTransport | StreamableHTTPClientTransport | null = null;
   private tools: Tool[] = [];
   private messageHistory: MessageParam[] = [];
   private rl: readline.Interface | null = null;
@@ -247,7 +249,7 @@ export class MCPClient {
     /**
      * Connect to an MCP server
      *
-     * @param serverScriptPath - Path to the server script (.py or .js)
+     * @param serverScriptPath - Server command or Streamable HTTP URL
      */
     try {
       // Determine script type and appropriate command
@@ -268,7 +270,13 @@ export class MCPClient {
         this.transport = null;
       }
 
-      if (isNpx) {
+      if (/^https?:\/\//i.test(serverScriptPath)) {
+        this.transport = new StreamableHTTPClientTransport(
+          new URL(serverScriptPath),
+          { requestInit: { headers: { "User-Agent": `mcp-chat/${pkg.version}` } } }
+        );
+        await this.mcp.connect(this.transport);
+      } else if (isNpx) {
         const allArgs = serverScriptPath.split(" ");
         const command = allArgs[0];
         // Remove 'npx' from the beginning of args if present

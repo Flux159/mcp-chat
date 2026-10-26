@@ -114,6 +114,16 @@ Custom system prompt:
 npx mcp-chat --system "Explain the output to the user in pirate speak." --server "npx mcp-server-kubernetes" -p "List the pods in the default namespace"
 ```
 
+## Remote MCP servers
+
+Pass a [Streamable HTTP](https://modelcontextprotocol.io/specification/2025-06-18/basic/transports#streamable-http) endpoint URL to `--server` instead of a local command:
+
+```shell
+npx mcp-chat --server "https://example.com/mcp" -p "What tools do you have available?"
+```
+
+Any `http://` or `https://` server string is treated as a Streamable HTTP endpoint, both in the CLI and in web mode chat settings. Legacy SSE endpoints and servers that require authentication are not currently supported.
+
 ## ENV vars
 
 Mcp-chat supports passing through env vars to mcp servers. This is not standardized in the mcp spec though and other clients may not do this with dynamic env var values - read more [here](https://github.com/Flux159/mcp-server-kubernetes/issues/148#issuecomment-2950181666) about standard stdio mcp clients.
