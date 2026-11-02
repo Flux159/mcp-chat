@@ -65,6 +65,31 @@ Or (Windows):
 npx mcp-chat --config "%APPDATA%\Claude\claude_desktop_config.json"
 ```
 
+## Local code lookup with Sem
+
+For a code-navigation example, install Node.js 20+ and select a trusted Git
+checkout. On macOS/Linux, pass the repository and process controls through the
+shell environment (the current config-file reader does not forward per-server
+`env` fields):
+
+```shell
+SEM_REPO="/absolute/path/to/checkout" SEM_LOCAL=1 SEM_MCP_NO_SHARED=1 SEM_NO_NETWORK=1 SEM_NO_TELEMETRY=1 \
+  npx mcp-chat --server "npx -y @ataraxy-labs/sem@0.29.0 mcp" \
+  -p "Use sem_find to locate parse_config and report its source location."
+```
+
+Replace `parse_config` with a known function in your checkout. The existing
+`ANTHROPIC_API_KEY` requirement still applies. The nested `npx` command uses the
+client's supported stdio launcher and downloads the Sem wrapper/binary on first
+use; this example is not an offline installation.
+
+[Sem](https://github.com/Ataraxy-Labs/sem) may write local indexes. `SEM_LOCAL`
+disables its MCP cloud client and `SEM_MCP_NO_SHARED` prevents daemon reuse;
+these settings are not filesystem or network isolation. The server exposes more
+than lookup tools, including command execution. Use a disposable/trusted
+checkout and appropriate host permissions. Returned source can reach the model
+provider. End the chat to disconnect; no default configuration is changed.
+
 ## Web mode
 
 https://github.com/user-attachments/assets/b7e8a648-8084-4955-8cdf-fc6eb141572e
